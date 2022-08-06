@@ -3,7 +3,7 @@
 , libjpeg, libpng, libsamplerate, libsndfile
 , libtiff, libGLU, libGL, openal, opencolorio, openexr, openimagedenoise, openimageio2, openjpeg, python310Packages
 , openvdb, libXxf86vm, tbb, alembic
-, zlib, zstd, fftw, opensubdiv, freetype, jemalloc, ocl-icd, addOpenGLRunpath
+, zlib, zstd, fftw, opensubdiv, freetype, jemalloc, ocl-icd, addOpenGLRunpath, hip
 , jackaudioSupport ? false, libjack2
 , cudaSupport ? config.cudaSupport or false, cudaPackages ? {}
 , colladaSupport ? true, opencollada
@@ -27,11 +27,11 @@ let
 in
 stdenv.mkDerivation rec {
   pname = "blender";
-  version = "3.2.0";
+  version = "3.2.1";
 
   src = fetchurl {
     url = "https://download.blender.org/source/${pname}-${version}.tar.xz";
-    hash = "sha256-k78LL1urcQWxnF1lSoSi3CH3Ylhzo2Bk2Yvq5zbTYEo=";
+    sha256 = "sha256-9pEvL2LkAHJygC5W3pXCHK3ZlLVIqQiP307pZVSugng=";
   };
 
   patches = lib.optional stdenv.isDarwin ./darwin.patch;
@@ -86,6 +86,7 @@ stdenv.mkDerivation rec {
                   '${python310Packages.numpy}/${python.sitePackages}/numpy'
     '' else ''
       substituteInPlace extern/clew/src/clew.c --replace '"libOpenCL.so"' '"${ocl-icd}/lib/libOpenCL.so"'
+      substituteInPlace extern/hipew/src/hipew.c --replace '"/opt/rocm/hip/lib/libamdhip64.so"' '"${hip}/lib/libamdhip64.so"'
     '');
 
   cmakeFlags =
@@ -112,6 +113,8 @@ stdenv.mkDerivation rec {
       "-DWITH_TBB=ON"
       "-DWITH_IMAGE_OPENJPEG=ON"
       "-DWITH_OPENCOLLADA=${if colladaSupport then "ON" else "OFF"}"
+      "-DWITH_CYCLES_HIP_BINARIES=ON"
+      "-DWITH_CYCLES_DEVICE_HIP=ON"
     ]
     ++ optionals stdenv.isDarwin [
       "-DWITH_CYCLES_OSL=OFF" # requires LLVM
